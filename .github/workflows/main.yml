@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  initialize:
+    runs-on: ubuntu-latest
+
+    outputs:
+      builds: ${{ steps.distribute-builds.outputs.result }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Use Node.js 12
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12'
+      - run: yarn install --frozen-lockfile
+      - run: yarn nx affected --target=lint --base=origin/master
+      - run: yarn nx affected --target=test --base=origin/master
+      - name: Distribute Builds
+        id: distribute-builds
+        uses: actions/github-script@v2
+        with:
+          script: |
+            const execSync = require('child_process').execSync;
+            const isMaster = process.argv[2] === 'False';
+            const baseSha = isMaster ? 'origin/master~1' : 'origin/master';
+
+            return execSync(
+              `npx nx print-affected --select=tasks.target.project --base=${baseSha} --target=build`
+            ).toString().trim().split(',')
+
+  build-app1:
+    runs-on: ubuntu-latest
+    needs: initialize
+    if: contains(needs.initialize.outputs.builds, 'app1')
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js 12
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12'
+      - run: yarn install --frozen-lockfile
+      - name: Build App 1
+        if: contains(steps.distribute-builds.outputs.result, 'app1')
+        run: yarn nx build app1 --prod
+
+
+  build-app2:
+    runs-on: ubuntu-latest
+    needs: initialize
+    if: contains(needs.initialize.outputs.builds, 'app2')
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js 12
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12'
+      - run: yarn install --frozen-lockfile
+      - name: Build App 1
+        if: contains(steps.distribute-builds.outputs.result, 'app2')
+        run: yarn nx build app2 --prod
