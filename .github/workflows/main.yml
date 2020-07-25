@@ -65,6 +65,6 @@ jobs:
         with:
           node-version: '12'
       - run: yarn install --frozen-lockfile
-      - name: Build App 1
+      - name: Build App 2
         if: contains(steps.distribute-builds.outputs.result, 'app2')
         run: yarn nx build app2 --prod
