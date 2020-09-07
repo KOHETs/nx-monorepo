@@ -23,6 +23,7 @@ jobs:
       - run: yarn install --frozen-lockfile
       - run: yarn nx affected --target=lint --base=origin/master
       - run: yarn nx affected --target=test --base=origin/master
+      - run: yarn nx affected --target=e2e --base=origin/master --all --parallel --maxParallel=2 -- --parallel
       - name: Distribute Builds
         id: distribute-builds
         uses: actions/github-script@v2
